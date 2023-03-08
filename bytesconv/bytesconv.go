@@ -731,6 +731,7 @@ func HexParseUint32(src []byte) (result uint32, err error) {
 		err = errors.New("Incorrect data: empty source")
 		return
 	}
+
 	base := uint32(1)
 	for i := len(src) - 1; i >= 0; i-- {
 		if base > cInt32MaxBase {
@@ -739,7 +740,7 @@ func HexParseUint32(src []byte) (result uint32, err error) {
 		}
 
 		if v, ok := revers16Map[src[i]]; !ok {
-			err = errors.New("Incorrect data: " + string(src))
+			//err = errors.New("Incorrect data: " + string(src))
 			return
 		} else {
 			result += base * uint32(v)
