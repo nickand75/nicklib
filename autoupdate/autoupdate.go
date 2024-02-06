@@ -16,9 +16,6 @@ import (
 )
 
 const (
-	/*cHashURL = "http://upd.youopen.net:82/upfile.php?pass=rfvfhl;j,f&a=md5&f="
-	cLoadURL = "http://upd.youopen.net:82/upfile.php?pass=rfvfhl;j,f&h=download&f="*/
-
 	cAutoUpdateHashSize = 128
 )
 
@@ -34,17 +31,17 @@ type UpdFileInfo struct {
 }
 
 type AutoUpdater struct {
-	hashURL   string
-	loadURL   string
+	hashURLs  []string
+	loadURLs  []string
 	tasks     []UpdFileInfo
 	isWorking sync.Mutex
 }
 
-func NewAutoUpdater(hashURL string, loadURL string, tasks []UpdFileInfo) *AutoUpdater {
+func NewAutoUpdater(hashURLs []string, loadURLs []string, tasks []UpdFileInfo) *AutoUpdater {
 	u := &AutoUpdater{
-		hashURL: hashURL,
-		loadURL: loadURL,
-		tasks:   tasks,
+		hashURLs: hashURLs,
+		loadURLs: loadURLs,
+		tasks:    tasks,
 	}
 
 	u.update()
@@ -99,7 +96,7 @@ func (u *AutoUpdater) update() {
 
 	restartFlag := false
 	for i := 0; i < len(u.tasks); i++ {
-		if UpdateFile(u.hashURL, u.loadURL, u.tasks[i].Dir, u.tasks[i].RemoteDir, u.tasks[i].FileName, u.tasks[i].SetExec, u.tasks[i].DontCheckHash, u.tasks[i].SilentMode) {
+		if UpdateFile(u.hashURLs, u.loadURLs, u.tasks[i].Dir, u.tasks[i].RemoteDir, u.tasks[i].FileName, u.tasks[i].SetExec, u.tasks[i].DontCheckHash, u.tasks[i].SilentMode) {
 			if u.tasks[i].NeedRestart {
 				if !u.tasks[i].SilentMode {
 					log.Println("Update file ", u.tasks[i].FileName, " completed, exiting...")
@@ -121,13 +118,22 @@ func (u *AutoUpdater) update() {
 	return
 }
 
-func UpdateFile(hashURL string, loadURL string, dir string, remoteDir string, fileName string, isExec bool, dontCheckHash bool, silentMode bool) bool {
+func UpdateFile(hashURLs []string, loadURLs []string, dir string, remoteDir string, fileName string, isExec bool, dontCheckHash bool, silentMode bool) bool {
 
 	curFilePathName := filepath.Join(dir, fileName)
 
 	// get hash from remote
-	remoteMd5Hash := GetRemoteMd5Hash(hashURL + remoteDir + "/" + fileName)
-	if len(remoteMd5Hash) < 5 || remoteMd5Hash[:5] == "Error" {
+	var remoteMd5Hash string
+	for i := 0; i < len(hashURLs); i++ {
+		remoteMd5Hash = GetRemoteMd5Hash(hashURLs[i] + remoteDir + "/" + fileName)
+		if len(remoteMd5Hash) < 5 || remoteMd5Hash[:5] == "Error" {
+			remoteMd5Hash = ""
+		} else {
+			break
+		}
+	}
+
+	if len(remoteMd5Hash) == 0 {
 		return false
 	}
 
@@ -148,11 +154,26 @@ func UpdateFile(hashURL string, loadURL string, dir string, remoteDir string, fi
 	}
 
 	var (
-		ok  bool
 		err error
+		ok  bool
 	)
 
-	for i := 0; i < 18; i++ {
+	for k := 0; k < 3; k++ {
+		for i := 0; i < len(loadURLs); i++ {
+			if ok, err = doLoadFile(loadURLs[i], remoteDir, curFilePathName, fileName, remoteMd5Hash, exists, isExec, dontCheckHash, silentMode); ok {
+				return ok
+			}
+		}
+
+		time.Sleep(1 * time.Minute)
+	}
+
+	if err != nil {
+		log.Println(err.Error())
+		return false
+	}
+
+	/*for i := 0; i < 18; i++ {
 		ok, err = doLoadFile(loadURL, remoteDir, curFilePathName, fileName, remoteMd5Hash, exists, isExec, dontCheckHash, silentMode)
 		if ok {
 			return ok
@@ -168,7 +189,7 @@ func UpdateFile(hashURL string, loadURL string, dir string, remoteDir string, fi
 		log.Println(err.Error())
 		return false
 	}
-	log.Println("Load file error!")
+	log.Println("Load file error!")*/
 
 	return false
 }
