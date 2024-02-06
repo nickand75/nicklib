@@ -195,7 +195,7 @@ func doGetHash(hashURLs []string, remoteDir string, fileName string) (res string
 			if len(res) < 5 || res[:5] == "Error" || err != nil {
 				res = ""
 			} else {
-				break
+				return
 			}
 		}
 		time.Sleep(1 * time.Minute)
