@@ -123,15 +123,7 @@ func UpdateFile(hashURLs []string, loadURLs []string, dir string, remoteDir stri
 	curFilePathName := filepath.Join(dir, fileName)
 
 	// get hash from remote
-	var remoteMd5Hash string
-	for i := 0; i < len(hashURLs); i++ {
-		remoteMd5Hash = GetRemoteMd5Hash(hashURLs[i] + remoteDir + "/" + fileName)
-		if len(remoteMd5Hash) < 5 || remoteMd5Hash[:5] == "Error" {
-			remoteMd5Hash = ""
-		} else {
-			break
-		}
-	}
+	remoteMd5Hash := doGetHash(hashURLs, remoteDir, fileName)
 
 	if len(remoteMd5Hash) == 0 {
 		return false
@@ -192,6 +184,27 @@ func UpdateFile(hashURLs []string, loadURLs []string, dir string, remoteDir stri
 	log.Println("Load file error!")*/
 
 	return false
+}
+
+func doGetHash(hashURLs []string, remoteDir string, fileName string) (res string) {
+
+	var err error
+	for k := 0; k < 3; k++ {
+		for i := 0; i < len(hashURLs); i++ {
+			res, err = GetRemoteMd5Hash(hashURLs[i] + remoteDir + "/" + fileName)
+			if len(res) < 5 || res[:5] == "Error" || err != nil {
+				res = ""
+			} else {
+				break
+			}
+		}
+		time.Sleep(1 * time.Minute)
+
+	}
+	if err != nil {
+		log.Println("Cannot get remote hash:", err.Error())
+	}
+	return
 }
 
 func doLoadFile(loadURL string, remoteDir string, curFilePathName string, fileName string, remoteMd5Hash string, exists bool, isExec bool, dontCheckHash bool, silentMode bool) (bool, error) {
@@ -268,33 +281,33 @@ func doLoadFile(loadURL string, remoteDir string, curFilePathName string, fileNa
 	return true, nil
 }
 
-func GetRemoteMd5Hash(checkURL string) string {
+func GetRemoteMd5Hash(checkURL string) (string, error) {
 
 	client := http.Client{}
 	// create HTTP request
 	req, err := http.NewRequest("GET", checkURL, nil)
 	if err != nil {
-		log.Println(err.Error())
-		return ""
+		//log.Println(err.Error())
+		return "", err
 	}
 
 	resp, err := client.Do(req)
 	if err != nil {
-		log.Println(err.Error(), checkURL)
-		return ""
+		//log.Println(err.Error(), checkURL)
+		return "", err
 	}
 	defer resp.Body.Close()
 
 	if resp.StatusCode != 200 {
-		log.Println("Server reply: " + strconv.Itoa(resp.StatusCode))
-		return ""
+		//log.Println("Server reply: " + strconv.Itoa(resp.StatusCode))
+		return "", err
 	}
 
 	// read hash
 	data := make([]byte, cAutoUpdateHashSize)
 	n, _ := io.ReadAtLeast(resp.Body, data, len(data))
 
-	return string(data[:n])
+	return string(data[:n]), nil
 }
 
 func ComputeMd5File(filePath string) (result string, err error) {
