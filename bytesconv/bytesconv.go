@@ -104,7 +104,8 @@ func FormatInt8(val int8, dst []byte) []byte {
 			v = -v
 		}
 		if flag || v != 0 {
-			dst = append(dst, base10Map[int(v)])
+			//dst = append(dst, base10Map[int(v)])
+			dst = append(dst, byte(v)-48)
 			flag = true
 		}
 
