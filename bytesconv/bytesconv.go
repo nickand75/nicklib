@@ -5,18 +5,6 @@ import (
 	"errors"
 )
 
-var base10Map = map[int]byte{0: '0',
-	1: '1',
-	2: '2',
-	3: '3',
-	4: '4',
-	5: '5',
-	6: '6',
-	7: '7',
-	8: '8',
-	9: '9',
-}
-
 var revers10Map = map[byte]int{'0': 0,
 	'1': 1,
 	'2': 2,
@@ -104,7 +92,6 @@ func FormatInt8(val int8, dst []byte) []byte {
 			v = -v
 		}
 		if flag || v != 0 {
-			//dst = append(dst, base10Map[int(v)])
 			dst = append(dst, byte(v)+48)
 			flag = true
 		}
@@ -126,7 +113,7 @@ func FormatUint8(val uint8, dst []byte) []byte {
 	for base > 0 {
 		v := val / base
 		if flag || v != 0 {
-			dst = append(dst, base10Map[int(v)])
+			dst = append(dst, byte(v)+48)
 			flag = true
 		}
 
@@ -152,7 +139,7 @@ func FormatInt16(val int16, dst []byte) []byte {
 	for base > 0 {
 		v := val / base
 		if flag || v != 0 {
-			dst = append(dst, base10Map[int(v)])
+			dst = append(dst, byte(v)+48)
 			flag = true
 		}
 
@@ -173,7 +160,7 @@ func FormatUint16(val uint16, dst []byte) []byte {
 	for base > 0 {
 		v := val / base
 		if flag || v != 0 {
-			dst = append(dst, base10Map[int(v)])
+			dst = append(dst, byte(v)+48)
 			flag = true
 		}
 
@@ -201,7 +188,7 @@ func FormatInt32(val int32, dst []byte) []byte {
 			v = -v
 		}
 		if flag || v != 0 {
-			dst = append(dst, base10Map[int(v)])
+			dst = append(dst, byte(v)+48)
 			flag = true
 		}
 
@@ -222,7 +209,7 @@ func FormatUint32(val uint32, dst []byte) []byte {
 	for base > 0 {
 		v := val / base
 		if flag || v != 0 {
-			dst = append(dst, base10Map[int(v)])
+			dst = append(dst, byte(v)+48)
 			flag = true
 		}
 
@@ -250,7 +237,7 @@ func FormatInt64(val int64, dst []byte) []byte {
 			v = -v
 		}
 		if flag || v != 0 {
-			dst = append(dst, base10Map[int(v)])
+			dst = append(dst, byte(v)+48)
 			flag = true
 		}
 
@@ -271,7 +258,7 @@ func FormatUint64(val uint64, dst []byte) []byte {
 	for base > 0 {
 		v := val / base
 		if flag || v != 0 {
-			dst = append(dst, base10Map[int(v)])
+			dst = append(dst, byte(v)+48)
 			flag = true
 		}
 
@@ -346,12 +333,20 @@ func ParseInt8(src []byte) (result int8, err error) {
 			return
 		}
 
-		if v, ok := revers10Map[src[i]]; !ok {
+		if src[i] < 48 || src[i] > 57 {
+			err = errors.New("Incorrect data: " + string(src))
+			return
+		} else {
+			result += base * int8(src[i]-48)
+		}
+
+		/*if v, ok := revers10Map[src[i]]; !ok {
 			err = errors.New("Incorrect data: " + string(src))
 			return
 		} else {
 			result += base * int8(v)
-		}
+		}*/
+
 		base *= 10
 	}
 	if flag {
@@ -644,7 +639,7 @@ func FormatFloat64(val float64, n int, dst []byte) []byte {
 	for i := 0; i < n; i++ {
 		val *= 10
 		v := int(val)
-		dst = append(dst, base10Map[v])
+		dst = append(dst, byte(v)+48)
 		val = val - float64(v)
 		if val == 0 {
 			break
@@ -756,4 +751,50 @@ func HexCharUpper(c byte) byte {
 		return '0' + c
 	}
 	return c - 10 + 'A'
+}
+
+func hex2char(src []byte) (res byte, err error) {
+
+	if len(src) < 2 {
+		err = errors.New("Source len is let than 2")
+		return
+	}
+
+	h, ok := checkValidHex(src[0])
+	if !ok {
+		err = errors.New("Invalid source: " + string(src[:2]))
+		return
+	}
+
+	l, ok := checkValidHex(src[1])
+	if !ok {
+		err = errors.New("Invalid source: " + string(src[:2]))
+		return
+	}
+
+	res = h*16 + l
+
+	return
+}
+
+func checkValidHex(src byte) (res byte, ok bool) {
+
+	if ok = (src >= 48 && src <= 57) || (src >= 65 && src <= 70) || (src >= 97 && src <= 102); !ok {
+		return
+	}
+
+	switch {
+
+	case (src >= 48 && src <= 57):
+		res = src - 48
+
+	case (src >= 65 && src <= 70):
+		res = src - 55
+
+	case (src >= 97 && src <= 102):
+		res = src - 87
+
+	}
+
+	return
 }
