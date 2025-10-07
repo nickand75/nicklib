@@ -5,18 +5,6 @@ import (
 	"errors"
 )
 
-var revers10Map = map[byte]int{'0': 0,
-	'1': 1,
-	'2': 2,
-	'3': 3,
-	'4': 4,
-	'5': 5,
-	'6': 6,
-	'7': 7,
-	'8': 8,
-	'9': 9,
-}
-
 var revers16Map = map[byte]int{'0': 0,
 	'1': 1,
 	'2': 2,
@@ -42,6 +30,8 @@ var revers16Map = map[byte]int{'0': 0,
 }
 
 const (
+	cMinInt8 = -127
+	cMaxInt8 = 127
 	cMaxUint = ^uint(0)
 	cMinUint = 0
 	cMaxInt  = int(cMaxUint >> 1)
@@ -103,6 +93,7 @@ func FormatInt8(val int8, dst []byte) []byte {
 }
 
 func FormatUint8(val uint8, dst []byte) []byte {
+
 	if val == 0 {
 		dst = append(dst, '0')
 		return dst
@@ -124,6 +115,7 @@ func FormatUint8(val uint8, dst []byte) []byte {
 }
 
 func FormatInt16(val int16, dst []byte) []byte {
+
 	if val == 0 {
 		dst = append(dst, '0')
 		return dst
@@ -150,6 +142,7 @@ func FormatInt16(val int16, dst []byte) []byte {
 }
 
 func FormatUint16(val uint16, dst []byte) []byte {
+
 	if val == 0 {
 		dst = append(dst, '0')
 		return dst
@@ -171,6 +164,7 @@ func FormatUint16(val uint16, dst []byte) []byte {
 }
 
 func FormatInt32(val int32, dst []byte) []byte {
+
 	if val == 0 {
 		dst = append(dst, '0')
 		return dst
@@ -199,6 +193,7 @@ func FormatInt32(val int32, dst []byte) []byte {
 }
 
 func FormatUint32(val uint32, dst []byte) []byte {
+
 	if val == 0 {
 		dst = append(dst, '0')
 		return dst
@@ -219,7 +214,18 @@ func FormatUint32(val uint32, dst []byte) []byte {
 	return dst
 }
 
+func FormatInt(val int, dst []byte) []byte {
+
+	return FormatInt64(int64(val), dst)
+}
+
+func FormatUint(val int, dst []byte) []byte {
+
+	return FormatUint64(uint64(val), dst)
+}
+
 func FormatInt64(val int64, dst []byte) []byte {
+
 	if val == 0 {
 		dst = append(dst, '0')
 		return dst
@@ -248,6 +254,7 @@ func FormatInt64(val int64, dst []byte) []byte {
 }
 
 func FormatUint64(val uint64, dst []byte) []byte {
+
 	if val == 0 {
 		dst = append(dst, '0')
 		return dst
@@ -297,6 +304,7 @@ func ParseBool(src []byte) (res bool, err error) {
 }
 
 func checkSign(src []byte) (dst []byte, flag bool, err error) {
+
 	if src[0] == '-' {
 		if len(src) < 2 {
 			err = errors.New("Incorrect data: " + string(src))
@@ -317,173 +325,139 @@ func checkSign(src []byte) (dst []byte, flag bool, err error) {
 }
 
 func ParseInt8(src []byte) (result int8, err error) {
-	if len(src) == 0 {
-		err = errors.New("Incorrect data: empty source")
-		return
-	}
-	flag := false
-	if src, flag, err = checkSign(src); err != nil {
+
+	v, err := ParseInt64(src)
+	if err != nil {
 		return
 	}
 
-	base := int8(1)
-	for i := len(src) - 1; i >= 0; i-- {
-		if base > cInt8MaxBase {
-			err = errors.New("Incorrect data: " + string(src))
-			return
-		}
-
-		if src[i] < 48 || src[i] > 57 {
-			err = errors.New("Incorrect data: " + string(src))
-			return
-		} else {
-			result += base * int8(src[i]-48)
-		}
-
-		//
-		/*if v, ok := revers10Map[src[i]]; !ok {
-			err = errors.New("Incorrect data: " + string(src))
-			return
-		} else {
-			result += base * int8(v)
-		}*/
-
-		base *= 10
+	if v != int64(int8(v)) {
+		err = errors.New("Source cannt be parsed as Int8: " + string(src))
+		return
 	}
-	if flag {
-		result = -result
-	}
+
+	result = int8(v)
+
 	return
 }
 
 func ParseUint8(src []byte) (result uint8, err error) {
-	if len(src) == 0 {
-		err = errors.New("Incorrect data: empty source")
+
+	v, err := ParseUint64(src)
+	if err != nil {
 		return
 	}
-	base := uint8(1)
-	for i := len(src) - 1; i >= 0; i-- {
-		if base > cInt8MaxBase {
-			err = errors.New("Incorrect data: " + string(src))
-			return
-		}
 
-		if v, ok := revers10Map[src[i]]; !ok {
-			err = errors.New("Incorrect data: " + string(src))
-			return
-		} else {
-			result += base * uint8(v)
-		}
-		base *= 10
+	if v != uint64(uint8(v)) {
+		err = errors.New("Source cannt be parsed as Uint8: " + string(src))
+		return
 	}
+
+	result = uint8(v)
+
 	return
 }
 
 func ParseInt16(src []byte) (result int16, err error) {
-	if len(src) == 0 {
-		err = errors.New("Incorrect data: empty source")
-		return
-	}
-	flag := false
-	if src, flag, err = checkSign(src); err != nil {
+
+	v, err := ParseInt64(src)
+	if err != nil {
 		return
 	}
 
-	base := int16(1)
-	for i := len(src) - 1; i >= 0; i-- {
-		if base > cInt16MaxBase {
-			err = errors.New("Incorrect data: " + string(src))
-			return
-		}
+	if v != int64(int16(v)) {
+		err = errors.New("Source cannt be parsed as Int16: " + string(src))
+		return
+	}
 
-		if v, ok := revers10Map[src[i]]; !ok {
-			err = errors.New("Incorrect data: " + string(src))
-			return
-		} else {
-			result += base * int16(v)
-		}
-		base *= 10
-	}
-	if flag {
-		result = -result
-	}
+	result = int16(v)
+
 	return
+
 }
 
 func ParseUint16(src []byte) (result uint16, err error) {
-	if len(src) == 0 {
-		err = errors.New("Incorrect data: empty source")
+
+	v, err := ParseUint64(src)
+	if err != nil {
 		return
 	}
-	base := uint16(1)
-	for i := len(src) - 1; i >= 0; i-- {
-		if base > cInt16MaxBase {
-			err = errors.New("Incorrect data: " + string(src))
-			return
-		}
 
-		if v, ok := revers10Map[src[i]]; !ok {
-			err = errors.New("Incorrect data: " + string(src))
-			return
-		} else {
-			result += base * uint16(v)
-		}
-		base *= 10
+	if v != uint64(uint16(v)) {
+		err = errors.New("Source cannt be parsed as Uint16: " + string(src))
+		return
 	}
+
+	result = uint16(v)
+
 	return
 }
 
 func ParseInt32(src []byte) (result int32, err error) {
-	if len(src) == 0 {
-		err = errors.New("Incorrect data: empty source")
-		return
-	}
-	flag := false
-	if src, flag, err = checkSign(src); err != nil {
+
+	v, err := ParseInt64(src)
+	if err != nil {
 		return
 	}
 
-	base := int32(1)
-	for i := len(src) - 1; i >= 0; i-- {
-		if base > cInt32MaxBase {
-			err = errors.New("Incorrect data: " + string(src))
-			return
-		}
+	if v != int64(int32(v)) {
+		err = errors.New("Source cannt be parsed as Int32: " + string(src))
+		return
+	}
 
-		if v, ok := revers10Map[src[i]]; !ok {
-			err = errors.New("Incorrect data: " + string(src))
-			return
-		} else {
-			result += base * int32(v)
-		}
-		base *= 10
-	}
-	if flag {
-		result = -result
-	}
+	result = int32(v)
+
 	return
 }
 
 func ParseUint32(src []byte) (result uint32, err error) {
-	if len(src) == 0 {
-		err = errors.New("Incorrect data: empty source")
+
+	v, err := ParseUint64(src)
+	if err != nil {
 		return
 	}
-	base := uint32(1)
-	for i := len(src) - 1; i >= 0; i-- {
-		if base > cInt32MaxBase {
-			err = errors.New("Incorrect data: " + string(src))
-			return
-		}
 
-		if v, ok := revers10Map[src[i]]; !ok {
-			err = errors.New("Incorrect data: " + string(src))
-			return
-		} else {
-			result += base * uint32(v)
-		}
-		base *= 10
+	if v != uint64(uint32(v)) {
+		err = errors.New("Source cannt be parsed as Uint32: " + string(src))
+		return
 	}
+
+	result = uint32(v)
+
+	return
+}
+
+func ParseInt(src []byte) (result int, err error) {
+
+	v, err := ParseInt64(src)
+	if err != nil {
+		return
+	}
+
+	if v != int64(int(v)) {
+		err = errors.New("Source cannt be parsed as Int: " + string(src))
+		return
+	}
+
+	result = int(v)
+
+	return
+}
+
+func ParseUint(src []byte) (result uint, err error) {
+
+	v, err := ParseUint64(src)
+	if err != nil {
+		return
+	}
+
+	if v != uint64(uint(v)) {
+		err = errors.New("Source cannt be parsed as Uint: " + string(src))
+		return
+	}
+
+	result = uint(v)
+
 	return
 }
 
@@ -504,50 +478,11 @@ func ParseInt64(src []byte) (result int64, err error) {
 			return
 		}
 
-		if v, ok := revers10Map[src[i]]; !ok {
+		if src[i] < 48 || src[i] > 57 {
 			err = errors.New("Incorrect data: " + string(src))
 			return
 		} else {
-			result += base * int64(v)
-		}
-		base *= 10
-	}
-	if flag {
-		result = -result
-	}
-	return
-}
-
-func ParseInt(src []byte) (result int, err error) {
-	if len(src) == 0 {
-		err = errors.New("Incorrect data: empty source")
-		return
-	}
-	flag := false
-	if src, flag, err = checkSign(src); err != nil {
-		return
-	}
-
-	maxIntBase := int(0)
-
-	if int64(cMaxInt) < cMaxInt64 {
-		maxIntBase = int(cInt32MaxBase)
-	} else {
-		maxIntBase = int(cInt64MaxBase)
-	}
-
-	base := int(1)
-	for i := len(src) - 1; i >= 0; i-- {
-		if base > maxIntBase {
-			err = errors.New("Incorrect data: " + string(src))
-			return
-		}
-
-		if v, ok := revers10Map[src[i]]; !ok {
-			err = errors.New("Incorrect data: " + string(src))
-			return
-		} else {
-			result += base * int(v)
+			result += base * int64(src[i]-48)
 		}
 		base *= 10
 	}
@@ -569,43 +504,11 @@ func ParseUint64(src []byte) (result uint64, err error) {
 			return
 		}
 
-		if v, ok := revers10Map[src[i]]; !ok {
+		if src[i] < 48 || src[i] > 57 {
 			err = errors.New("Incorrect data: " + string(src))
 			return
 		} else {
-			result += base * uint64(v)
-		}
-		base *= 10
-	}
-	return
-}
-
-func ParseUint(src []byte) (result uint, err error) {
-	if len(src) == 0 {
-		err = errors.New("Incorrect data: empty source")
-		return
-	}
-
-	maxUintBase := uint(0)
-
-	if uint64(cMaxUint) < cMaxUint64 {
-		maxUintBase = uint(cInt32MaxBase)
-	} else {
-		maxUintBase = uint(cUInt64MaxBase)
-	}
-
-	base := uint(1)
-	for i := len(src) - 1; i >= 0; i-- {
-		if base > maxUintBase {
-			err = errors.New("Incorrect data: " + string(src))
-			return
-		}
-
-		if v, ok := revers10Map[src[i]]; !ok {
-			err = errors.New("Incorrect data: " + string(src))
-			return
-		} else {
-			result += base * uint(v)
+			result += base * uint64(src[i]-48)
 		}
 		base *= 10
 	}
@@ -754,7 +657,7 @@ func HexCharUpper(c byte) byte {
 	return c - 10 + 'A'
 }
 
-func hex2char(src []byte) (res byte, err error) {
+func Hex2Byte(src []byte) (res byte, err error) {
 
 	if len(src) < 2 {
 		err = errors.New("Source len is let than 2")
@@ -774,6 +677,28 @@ func hex2char(src []byte) (res byte, err error) {
 	}
 
 	res = h*16 + l
+
+	return
+}
+
+func Byte2Hex(src byte, dst []byte) (res []byte) {
+
+	h := src / 16
+	l := src % 16
+
+	if h > 0 && h < 10 {
+		dst = append(dst, h+48)
+	} else {
+		dst = append(dst, h+87)
+	}
+
+	if l > 0 && l < 10 {
+		dst = append(dst, l+48)
+	} else {
+		dst = append(dst, l+87)
+	}
+
+	res = dst
 
 	return
 }
