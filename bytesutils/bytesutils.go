@@ -231,6 +231,10 @@ func Trim(src []byte) (dst []byte) {
 
 	dst = src
 
+	if len(src) == 0 {
+		return
+	}
+
 	for dst[0] == ' ' || dst[len(dst)-1] == ' ' {
 		if dst[0] == ' ' {
 			dst = dst[1:]
